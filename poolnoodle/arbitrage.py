@@ -31,7 +31,8 @@ steth_price_usd = Decimal(coin_prices[1]["current_price"])
 
 INFURA_URL = "https://mainnet.infura.io/v3/"+CONFIG["keys"]["infura"]
 w3 = Web3(HTTPProvider(INFURA_URL))
-print("Latest Ethereum block number", w3.eth.block_number)
+LAST_BLOCK = w3.eth.block_number
+print("Latest Ethereum block number", LAST_BLOCK)
 
 account = Account.from_key(CONFIG["keys"]["wallet"])
 balance_wei = w3.eth.get_balance(account.address)
@@ -44,23 +45,26 @@ curve_steth_pool_address = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"  # steth
 curve_abi = Path("abi/curve.abi").read_text()
 curve = w3.eth.contract(address=curve_steth_pool_address, abi=curve_abi)
 
-curve_t0 =  curve.functions.coins(0).call()
-curve_t1 =  curve.functions.coins(1).call()
+curve_t0 =  curve.functions.coins(0).call(block_identifier = LAST_BLOCK)
+curve_t1 =  curve.functions.coins(1).call(block_identifier = LAST_BLOCK)
 print(
     f"curve t0:{curve_t0} t1:{curve_t1}"
 )
-curve_t0_reserve = curve.functions.balances(0).call()
-curve_t1_reserve = curve.functions.balances(1).call()
+curve_t0_reserve = curve.functions.balances(0).call(block_identifier = LAST_BLOCK)
+curve_t1_reserve = curve.functions.balances(1).call(block_identifier = LAST_BLOCK)
 curve_fee = 0.0004 # curve.functions.fee().call() / 1e10
 curve_reserve_price = curve_t0_reserve/curve_t1_reserve
 print(f"curve reserves t0: {curve_t0_reserve} t1: {curve_t1_reserve} t0/t1: {curve_reserve_price} w/ 0.04% fee {curve_reserve_price * (1+curve_fee)}")
 
 # def get_dy_underlying(i: int128, j: int128, dx: uint256) -> uint256:
 # How much of underlying token j you'll get in exchange for dx of token i, including the fee.
-curve_amount_wei = curve.functions.get_dy(0, 1, amount_to_send_wei).call()
+curve_amount_wei = curve.functions.get_dy(0, 1, amount_to_send_wei).call(block_identifier = LAST_BLOCK)
 curve_price_wei = Decimal(amount_to_send_wei) / Decimal(curve_amount_wei)
 curve_price_eth = w3.from_wei(curve_price_wei, 'ether')
-print(f"curve in t0 {amount_to_send_wei} amount out t1 {curve_amount_wei} price {curve_price_wei} eth")
+print(f"curve get_dy t0 {amount_to_send_wei} amount out t1 {curve_amount_wei} price {curve_price_wei} eth")
+curve_amount2_wei = curve.functions.get_dy(1, 0, amount_to_send_wei).call(block_identifier = LAST_BLOCK)
+curve_price2_wei = Decimal(curve_amount2_wei) / Decimal(amount_to_send_wei)
+print(f"curve get_dy t1 {amount_to_send_wei} amount out t0 {curve_amount2_wei} price {curve_price2_wei} eth")
 
 uniswap_permit2_abi = Path("abi/permit2.abi").read_text()
 uniswap_permit2_address = "0x000000000022D473030F116dDEE9F6B43aC78BA3"
@@ -80,13 +84,13 @@ uniswap_router2 = w3.eth.contract(
 
 uniswap_pool_allowance = uniswap_pool.functions.allowance(
     uniswap_pool_address, account.address
-).call()
+).call(block_identifier = LAST_BLOCK)
 print("uniswap_pool_allowance", uniswap_pool_allowance)
 
-uniswap_t0 = uniswap_pool.functions.token0().call()
-uniswap_t1 = uniswap_pool.functions.token1().call()
+uniswap_t0 = uniswap_pool.functions.token0().call(block_identifier = LAST_BLOCK)
+uniswap_t1 = uniswap_pool.functions.token1().call(block_identifier = LAST_BLOCK)
 print(f"uniswap t0: {uniswap_t0} t1: {uniswap_t1}")
-uniswap_reserves = uniswap_pool.functions.getReserves().call()
+uniswap_reserves = uniswap_pool.functions.getReserves().call(block_identifier = LAST_BLOCK)
 uniswap_t0_reserve = uniswap_reserves[0]
 uniswap_t1_reserve = uniswap_reserves[1]
 uniswap_fee = 0.003
@@ -96,24 +100,26 @@ print(f"uniswap reserves t0: {uniswap_t0_reserve} t1: {uniswap_t1_reserve} price
 
 uniswap_route_path = [uniswap_t1, uniswap_t0]
 # function getAmountsOut(uint amountIn, address[] memory path) internal view returns (uint[] memory amounts);
-uniswap_amounts_out_wei = uniswap_router2.functions.getAmountsOut(amount_to_send_wei, uniswap_route_path).call()
+uniswap_amounts_out_wei = uniswap_router2.functions.getAmountsOut(amount_to_send_wei, uniswap_route_path).call(block_identifier = LAST_BLOCK)
 uniswap_amount_wei = uniswap_amounts_out_wei[1]
 uniswap_price_eth = Decimal(uniswap_amounts_out_wei[0]) / Decimal(uniswap_amounts_out_wei[1])
 print(f"uniswap getAmountsOut [t1, t0] {uniswap_amounts_out_wei} price {uniswap_price_eth}")
 
-uniswap_amount_out_wei = uniswap_router2.functions.getAmountOut( w3.to_wei(1, 'ether'), uniswap_reserves[1], uniswap_reserves[0] ).call()
+uniswap_amount_out_wei = uniswap_router2.functions.getAmountOut( w3.to_wei(1, 'ether'), uniswap_reserves[1], uniswap_reserves[0] ).call(block_identifier = LAST_BLOCK)
 print(f"uniswap getAmountOut 1 eth t1 {10**18} out t0 {uniswap_amount_out_wei} price {10**18 / uniswap_amount_out_wei} grr {uniswap_amount_out_wei / 10**18}")
-uniswap_amount_out2_wei = uniswap_router2.functions.getAmountOut( w3.to_wei(1, 'ether'), uniswap_reserves[0], uniswap_reserves[1] ).call()
-print(f"uniswap getAmountOut 1 eth t0 {10**18} out t1 {uniswap_amount_out2_wei} price {10**18 / uniswap_amount_out_wei} grr {uniswap_amount_out_wei / 10**18}")
-uniswap_amount_out3_wei = uniswap_router2.functions.getAmountOut( uniswap_amount_out2_wei, uniswap_reserves[1], uniswap_reserves[0] ).call()
-print(f"uniswap getAmountOut 1 eth t1 {uniswap_amount_out2_wei} out t0 {uniswap_amount_out3_wei} price {10**18 / uniswap_amount_out_wei} grr {uniswap_amount_out_wei / 10**18}")
+uniswap_amount_out_wei = uniswap_router2.functions.getAmountOut( w3.to_wei(7, 'ether'), uniswap_reserves[1], uniswap_reserves[0] ).call(block_identifier = LAST_BLOCK)
+print(f"uniswap getAmountOut 7 eth t1 {7e18} out t0 {uniswap_amount_out_wei} price {7e18 / uniswap_amount_out_wei} grr {uniswap_amount_out_wei / 7e18}")
+uniswap_amount_out2_wei = uniswap_router2.functions.getAmountOut( w3.to_wei(1, 'ether'), uniswap_reserves[0], uniswap_reserves[1] ).call(block_identifier = LAST_BLOCK)
+print(f"uniswap getAmountOut 1 eth t0 {10**18} out t1 {uniswap_amount_out2_wei} price {10**18 / uniswap_amount_out2_wei} grr {uniswap_amount_out2_wei / 10**18}")
+uniswap_amount_out3_wei = uniswap_router2.functions.getAmountOut( uniswap_amount_out2_wei, uniswap_reserves[1], uniswap_reserves[0] ).call(block_identifier = LAST_BLOCK)
+print(f"uniswap getAmountOut 1 eth t1 {uniswap_amount_out2_wei} out t0 {uniswap_amount_out3_wei} price {10**18 / uniswap_amount_out3_wei} grr {uniswap_amount_out3_wei / 10**18}")
 print(f"quick loop {(1e18 - uniswap_amount_out3_wei) / 1e18} loss")
 
 nonce = w3.eth.get_transaction_count(account.address)
 steth_amount_diff_wei = abs(curve_amount_wei - uniswap_amount_wei)
 print(f"steth_amount_diff_wei {steth_amount_diff_wei} = curve_amount_wei {curve_amount_wei} - uniswap_amount_wei {uniswap_amount_wei}")
 print(f"** steth_amount_diff_wei {steth_amount_diff_wei} {coinprint(w3.from_wei(steth_amount_diff_wei, 'ether'), steth_price_usd)}")
-print(f"** amount_diff per eth {steth_amount_diff_wei / amount_to_send_wei}")
+print(f"** amount_diff per eth {coinprint(Decimal(steth_amount_diff_wei) / Decimal(amount_to_send_wei), steth_price_usd)}")
 
 print(f"if curve_amount_wei {curve_amount_wei} < uniswap_amount_wei {uniswap_amount_wei} = {curve_amount_wei < uniswap_amount_wei}")
 if curve_amount_wei < uniswap_amount_wei:
@@ -171,7 +177,7 @@ else:
 
     tx_signed = w3.eth.account.sign_transaction(tx, account.key)
 
-    curve_amount2_wei = curve.functions.get_dy(1, 0, min_to_receive).call()
+    curve_amount2_wei = curve.functions.get_dy(1, 0, min_to_receive).call(block_identifier = LAST_BLOCK)
     print(f"curve min_to_receive t1 {min_to_receive} returns t0 {curve_amount2_wei}")
 
     revenue_wei = curve_amount2_wei - amount_to_send_wei
