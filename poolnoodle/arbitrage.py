@@ -180,10 +180,11 @@ else:
     curve_amount2_wei = curve.functions.get_dy(1, 0, min_to_receive).call(block_identifier = LAST_BLOCK)
     print(f"curve min_to_receive t1 {min_to_receive} returns t0 {curve_amount2_wei}")
 
-    revenue_wei = curve_amount2_wei - amount_to_send_wei
+    revenue_wei = abs(curve_amount2_wei - amount_to_send_wei)
+    print(f"revenue_wei {revenue_wei} = curve_amount2_wei {curve_amount2_wei} - amount_to_send_wei {amount_to_send_wei}")
     revenue_eth = w3.from_wei(revenue_wei, 'ether')
-    profit_eth = revenue_eth - gas_cost_eth*2
-    print(f"revenue_eth {revenue_eth} - gasx2 {gas_cost_eth*2} = profit_eth {profit_eth}")
+    profit_eth = revenue_eth - gas_fee_eth*2
+    print(f"revenue_eth {revenue_eth} - gasx2 {gas_fee_eth*2} = profit_eth {coinprint(profit_eth, eth_price_usd)}")
     if profit_eth > 0:
         print("GO!")
         # tx_hash = w3.eth.send_raw_transaction(tx_signed.rawTransaction)
