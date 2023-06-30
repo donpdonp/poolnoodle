@@ -31,7 +31,10 @@ steth_price_usd = Decimal(coin_prices[1]["current_price"])
 
 INFURA_URL = "https://mainnet.infura.io/v3/"+CONFIG["keys"]["infura"]
 w3 = Web3(HTTPProvider(INFURA_URL))
-LAST_BLOCK = w3.eth.block_number
+if len(sys.argv) > 1 and sys.argv[1]:
+    LAST_BLOCK = int(sys.argv[1])
+else:
+    LAST_BLOCK = w3.eth.block_number
 print("Latest Ethereum block number", LAST_BLOCK)
 
 account = Account.from_key(CONFIG["keys"]["wallet"])
@@ -64,11 +67,11 @@ print(f"curve get_dy t0 {amount_to_send_wei} amount out t1 {curve_amount_wei} pr
 curve_amount3_wei = curve.functions.get_dy(1, 0, curve_amount_wei).call(block_identifier = LAST_BLOCK)
 curve_price3_wei = Decimal(curve_amount3_wei) / Decimal(curve_amount_wei)
 print(f"curve get_dy t1 {curve_amount_wei} amount out t0 {curve_amount3_wei} price t0/t1 {curve_price3_wei} eth")
-curve_calc_fee = (curve_amount3_wei-curve_amount_wei)/curve_amount_wei/2
+curve_calc_fee = abs((curve_amount3_wei-amount_to_send_wei)/amount_to_send_wei/2)
 print(f"quick curve loop eth->steth->eth {curve_amount3_wei - curve_amount_wei} profit wei {curve_calc_fee*100:.2f}% fee")
-curve_amount_wei_nofee = curve_amount_wei * (1+curve_calc_fee)
+curve_amount_wei_nofee = curve_amount_wei / (1-curve_fee)
 curve_price_nofee = Decimal(amount_to_send_wei) / Decimal(curve_amount_wei_nofee) 
-print(f"curve get_dy t0 {amount_to_send_wei} amount out_nofee t1 {curve_amount_wei_nofee} price t0/t1 {curve_price_nofee} eth")
+print(f"curve get_dy t0 {amount_to_send_wei} amount t1 {curve_amount_wei} nofee t1 {curve_amount_wei_nofee} price t0/t1 {curve_price_nofee} eth")
 
 
 uniswap_permit2_abi = Path("abi/permit2.abi").read_text()
@@ -117,18 +120,17 @@ print(f"uniswap getAmountOut 7 eth t1 {7e18} out t0 {uniswap_amount_out_wei} pri
 uniswap_amount_out2_wei = uniswap_router2.functions.getAmountOut( w3.to_wei(1, 'ether'), uniswap_reserves[0], uniswap_reserves[1] ).call(block_identifier = LAST_BLOCK)
 print(f"uniswap getAmountOut 1 eth t0 {10**18} out t1 {uniswap_amount_out2_wei} price {uniswap_amount_out2_wei / 10**18} eth { 10**18/uniswap_amount_out2_wei} steth")
 uniswap_amount_out3_wei = uniswap_router2.functions.getAmountOut( uniswap_amount_out2_wei, uniswap_reserves[1], uniswap_reserves[0] ).call(block_identifier = LAST_BLOCK)
-print(f"uniswap getAmountOut 1 eth t1 {uniswap_amount_out2_wei} out t0 {uniswap_amount_out3_wei} price {1e18 / uniswap_amount_out3_wei} eth {uniswap_amount_out3_wei / 1e18} steth")
+print(f"uniswap getAmountOut 1 eth t1 {uniswap_amount_out2_wei} out t0 {uniswap_amount_out3_wei} price {uniswap_amount_out2_wei / uniswap_amount_out3_wei} eth {uniswap_amount_out3_wei / uniswap_amount_out2_wei} steth")
 uniswap_calc_fee = (1e18 - uniswap_amount_out3_wei) / 1e18 / 2
 print(f"quick uniswap loop eth->steth->eth {uniswap_amount_out3_wei - 1e18} profit {uniswap_calc_fee*100:.2f}% fee")
-uniswap_amount_wei_nofee = int(uniswap_amount_wei * (1+uniswap_calc_fee))
-uniswap_price_nofee = amount_to_send_wei / uniswap_amount_wei_nofee
+uniswap_amount_wei_nofee = int(uniswap_amount_wei / (1-uniswap_calc_fee))
+uniswap_price_nofee = Decimal(amount_to_send_wei / uniswap_amount_wei_nofee)
 print(f"uniswap t1 {amount_to_send_wei} out t0 nofee {uniswap_amount_wei_nofee} price {uniswap_price_nofee}")
 
 nonce = w3.eth.get_transaction_count(account.address)
-steth_amount_diff_wei = abs(curve_amount_wei - uniswap_amount_wei)
-print(f"steth_amount_diff_wei {steth_amount_diff_wei} = curve_amount_wei {curve_amount_wei} - uniswap_amount_wei {uniswap_amount_wei}")
-print(f"** steth_amount_diff_wei {steth_amount_diff_wei} {coinprint(w3.from_wei(steth_amount_diff_wei, 'ether'), steth_price_usd)}")
-print(f"** amount_diff per eth {coinprint(Decimal(steth_amount_diff_wei) / Decimal(amount_to_send_wei), steth_price_usd)}")
+price_diff = abs(curve_price_nofee - uniswap_price_nofee)
+print(f"** price_diff { price_diff } = curve_price_nofee {curve_price_nofee } - uniswap_price_nofee {uniswap_price_nofee }")
+print(f"** price_diff {price_diff} {coinprint(price_diff, steth_price_usd)}")
 
 print(f"if curve_amount_wei {curve_amount_wei} < uniswap_amount_wei {uniswap_amount_wei} = {curve_amount_wei < uniswap_amount_wei}")
 if curve_amount_wei < uniswap_amount_wei:
