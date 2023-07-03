@@ -1,0 +1,79 @@
+30 June 2023
+
+##
+TX https://etherscan.io/tx/0x862ed527a70aa5a0070923e98b0144834eff509388fcefab7915941f3ce56665
+eth blk 17593702
+
+value 4.05 ETH ($7,851.65)
+Transaction Fee:
+0.005704971979638492 ETH ($11.06)
+
+From Curve.fi: Swap Router
+To 0x5457D0...1C1136c6
+For 4.050067049819211068($7,849.48) stETH...(stETH...)
+
+### wcalc
+-> (4.05 -  0.005704) / 4.05006 / (1-0.0004)
+ = 0.998976  # nofee
+-> (4.05 -  0.005704) / 4.05006
+~= 0.998577  # withfee
+
+## MANUAL get_dy 4.05 for blk 17593702
+t0 4.050000000000000000 amount t1 4.050062454327729570
+curve get_dy t0 4050000000000000000 amount t1 4050062454327729570 nofee t1 4.051683127578761e+18 price t0/t1 0.9995845855843699619484912326 eth
+
+## MANUAL get_dy 4.05 for blk 17593701
+curve reserves t0: 228867939532547285573980 t1: 231846983258770112570662 t0/t1: 0.9871508195433458 w/ 0.04% fee 0.9875456798711632
+curve get_dy t0   31782584486554572 amount t1   31783128555466428 nofee t1 3.179584689422411e+16 price t0/t1 0.9995828886799692954050680051 eth
+curve get_dy t0 4050000000000000000 amount t1 4050067049819211068 nofee t1 4.051687724909175e+18 price t0/t1 0.9995834513852588140617603078 eth
+
+
+* ERROR of wcalc price 0.001 more expensive than poolnoodle price estimate
+
+## reserve changes from ..701 to ..702
+-> 228871989532547285573980 - 228867939532547285573980
+~= 4.05e+18 # Check, matches input
+-> 231842932381382748377761 - 231846983258770112570662
+~= -4.05088e+18 #
+-> 4.05088 - 4.050067049819211068
+~= 0.00081295 # fee?
+-> (4.05088 - 4.050067049819211068) / 4.050067049819211068
+ = 0.000200725 # 0.02% - half of 0.04% goes to pool, other half goes to DAO
+
+
+## pool noodle
+Latest Ethereum block number 17593702
+curve t0:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE t1:0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
+curve reserves t0: 228871989532547285573980 t1: 231842932381382748377761 t0/t1: 0.987185536266647 w/ 0.04% fee 0.9875804104811535
+
+curve get_dy t0 31782584486554572 amount out t1 31783092492056032 price t0/t1 0.999984016486 eth
+curve get_dy t1 31783092492056032 amount out t0 31757163221429129 price t0/t1 0.999184180374 eth
+
+wrong
+quick curve loop eth->steth->eth -25929270626903 profit wei -0.04% fee
+curve get_dy t0 31782584486554572 amount out_nofee t1 3.177013314298823e+16 price t0/t1 1.000391919 eth
+
+corrected
+quick curve loop eth->steth->eth -25929270626903 profit wei 0.04% fee
+curve get_dy t0 31782584486554572 amount out_nofee t1 3.1795810816382584e+16 price t0/t1 0.9995840228794795438938454275 eth
+
+
+
+==================
+Compare
+==================
+https://etherscan.io/tx/0xe69f5d78edd51e1239718d7a6b12c5ab57e40b28f63ca92613812beeb6aa8d7e
+
+Value:
+15 ETH ($28,854.75)
+Transaction Fee:
+0.010593939148938159 ETH ($20.38)
+Gas Price:
+45.704704449 Gwei (0.000000045704704449 ETH)
+
+From Lido: Curve Liquidity Farming Pool Contract
+For 15.000225799042078869($28,897.63) stETH...(stETH...)
+From 0x23eBCD...b9B2b3Ad
+To 0x8BC2B0...688a1173
+For 15.00022579904207887($28,897.63) stETH...(stETH...)
+
