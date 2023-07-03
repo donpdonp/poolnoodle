@@ -18,8 +18,7 @@ weth_coin = Coin("ethereum", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
 
 
 def coinprint(v, usd):
-    return f"{v:.5f} (${v*usd:.2f})"
-
+    return f"{v:.6f} (${v*usd:.2f})"
 
 logger = logging.getLogger()
 logging.getLogger("web3.RequestManager").setLevel(logging.DEBUG)
@@ -178,15 +177,11 @@ print(
 nonce = w3.eth.get_transaction_count(account.address)
 price_diff = abs(curve_price_nofee - uniswap_price_nofee)
 print(
-    f"** price_diff { price_diff } = curve_price_nofee {curve_price_nofee } - uniswap_price_nofee {uniswap_price_nofee }"
+    f"** price diff {price_diff:.6f} = curve_price_nofee {curve_price_nofee:.6f} - uniswap_price_nofee {uniswap_price_nofee:.6f}"
 )
-print(f"** price_diff {price_diff} {coinprint(price_diff, steth_price_usd)}")
+print(f"** price diff {coinprint(price_diff, steth_price_usd)}, fee rate {uniswap_fee} + {curve_fee} = {uniswap_fee + curve_fee}")
 
-print(
-    f"if curve_amount_wei {curve_amount_wei} < uniswap_amount_wei {uniswap_amount_wei} = {curve_amount_wei < uniswap_amount_wei}"
-)
-if curve_amount_wei < uniswap_amount_wei:
-    print(f"-> curve to uniswap")
+def curve_buy():
     # 0: eth 1: steth
     # exchange(i,j,dx,min_dy)
     # i: Index value for the coin to send
@@ -200,8 +195,8 @@ if curve_amount_wei < uniswap_amount_wei:
     # print("curve build_transaction", ttx)
     # gas_estimate = w3.eth.estimate_gas(ttx)
     # print(f"gas_estimate {gas_estimate}")
-else:
-    print(f"-> uniswap to curve")
+
+def uniswap_buy():
     slip_percent = 0.0
     slip_value = Decimal(1 - slip_percent / 100)
     min_to_receive = int(uniswap_amount_wei * slip_value)  # 0.1% slippage
@@ -269,3 +264,13 @@ else:
     else:
         print("STOP!")
         print(f"Breakeven eth {gas_fee_eth*2/revenue_eth:.4f}")
+
+if price_diff > uniswap_fee + curve_fee:
+    if curve_price_nofee < uniswap_price_nofee:
+        print(f"-> curve to uniswap")
+        curve_buy()
+    else:
+        print(f"-> uniswap to curve")
+        uniswap_buy()
+else:
+    print(f"no opp")
