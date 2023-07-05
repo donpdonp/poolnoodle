@@ -166,17 +166,19 @@ uniswap_calc_fee = (1e18 - uniswap_amount_out3_wei) / 1e18 / 2
 print(
     f"quick uniswap loop eth->steth->eth {uniswap_amount_out3_wei - 1e18} profit {uniswap_calc_fee*100:.2f}% fee"
 )
-uniswap_amount_wei_nofee = int(uniswap_amount_wei / (1 - uniswap_calc_fee))
-uniswap_price_nofee = Decimal(amount_to_send_wei / uniswap_amount_wei_nofee)
+uniswap_price_nofee = Decimal(amount_to_send_wei / uniswap_amount_wei) / Decimal(1 - uniswap_calc_fee)
 print(
-    f"uniswap t1 {amount_to_send_wei} out t0 nofee {uniswap_amount_wei_nofee} price {uniswap_price_nofee}"
+    f"uniswap t1 {amount_to_send_wei} out t0 {uniswap_amount_wei} price {uniswap_price_nofee}"
 )
 
 price_diff = abs(curve_price_nofee - uniswap_price_nofee)
 print(
     f"** price diff {price_diff:.6f} = curve_price_nofee {curve_price_nofee:.6f} - uniswap_price_nofee {uniswap_price_nofee:.6f}"
 )
-print(f"** price diff {coinprint(price_diff, steth_price_usd)}, fee rate {uniswap_fee} + {curve_fee} = {uniswap_fee + curve_fee}")
+
+price_diff_after_fee = price_diff - Decimal(uniswap_fee + curve_fee)
+print(f"** price diff {coinprint(price_diff, eth_price_usd)} - fee rate {uniswap_fee} + {curve_fee} (= {uniswap_fee + curve_fee})",
+    f"= {coinprint(price_diff_after_fee, eth_price_usd)}")
 
 def curve_buy():
     # 0: eth 1: steth
