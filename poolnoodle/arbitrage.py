@@ -54,7 +54,7 @@ curve_t1 = curve.functions.coins(1).call(block_identifier=LAST_BLOCK)
 print(f"curve t0:{curve_t0} t1:{curve_t1}")
 curve_t0_reserve = curve.functions.balances(0).call(block_identifier=LAST_BLOCK)
 curve_t1_reserve = curve.functions.balances(1).call(block_identifier=LAST_BLOCK)
-curve_fee = 0.0004  # curve.functions.fee().call() / 1e10
+curve_fee = 0.0001  # curve.functions.fee().call() / 1e10
 curve_reserve_price = curve_t0_reserve / curve_t1_reserve
 print(
     f"curve reserves t0: {curve_t0_reserve} t1: {curve_t1_reserve} t0/t1: {curve_reserve_price} w/ 0.04% fee {curve_reserve_price * (1+curve_fee)}"
