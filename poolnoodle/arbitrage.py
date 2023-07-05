@@ -51,13 +51,14 @@ curve = w3.eth.contract(address=curve_steth_pool_address, abi=curve_abi)
 
 curve_t0 = curve.functions.coins(0).call(block_identifier=LAST_BLOCK)
 curve_t1 = curve.functions.coins(1).call(block_identifier=LAST_BLOCK)
-print(f"curve t0:{curve_t0} t1:{curve_t1}")
+curve_fee = curve.functions.fee().call(block_identifier=LAST_BLOCK) / 1e10
+curve_A = curve.functions.A().call(block_identifier=LAST_BLOCK) 
+print(f"curve t0:{curve_t0} t1:{curve_t1} fee:{curve_fee} A:{curve_A}")
 curve_t0_reserve = curve.functions.balances(0).call(block_identifier=LAST_BLOCK)
 curve_t1_reserve = curve.functions.balances(1).call(block_identifier=LAST_BLOCK)
-curve_fee = 0.0001  # curve.functions.fee().call() / 1e10
 curve_reserve_price = curve_t0_reserve / curve_t1_reserve
 print(
-    f"curve reserves t0: {curve_t0_reserve} t1: {curve_t1_reserve} t0/t1: {curve_reserve_price} w/ 0.04% fee {curve_reserve_price * (1+curve_fee)}"
+    f"curve reserves t0: {curve_t0_reserve} t1: {curve_t1_reserve} t0/t1 price: {curve_reserve_price} w/ {curve_fee} fee price: {curve_reserve_price * (1+curve_fee)}"
 )
 
 # def get_dy_underlying(i: int128, j: int128, dx: uint256) -> uint256:
@@ -78,14 +79,13 @@ print(
 )
 curve_calc_fee = abs((curve_amount3_wei - amount_to_send_wei) / amount_to_send_wei / 2)
 print(
-    f"quick curve loop eth->steth->eth {curve_amount3_wei - curve_amount_wei} profit wei {curve_calc_fee*100:.2f}% fee"
+    f"quick curve loop eth->steth->eth {curve_amount3_wei - curve_amount_wei} wei profit = fee {curve_calc_fee:.4f}"
 )
 curve_amount_wei_nofee = curve_amount_wei / (1 - curve_fee)
 curve_price_nofee = Decimal(amount_to_send_wei) / Decimal(curve_amount_wei_nofee)
 print(
-    f"curve get_dy t0 {amount_to_send_wei} amount t1 {curve_amount_wei} nofee t1 {curve_amount_wei_nofee} price t0/t1 {curve_price_nofee} eth"
+    f"curve get_dy t0 {amount_to_send_wei} amount t1 {curve_amount_wei} t1 nofee {curve_amount_wei_nofee} t0/t1 nofee price: {curve_price_nofee} eth"
 )
-
 
 uniswap_permit2_abi = Path("abi/permit2.abi").read_text()
 uniswap_permit2_address = "0x000000000022D473030F116dDEE9F6B43aC78BA3"
