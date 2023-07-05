@@ -12,13 +12,7 @@ From Curve.fi: Swap Router
 To 0x5457D0...1C1136c6
 For 4.050067049819211068($7,849.48) stETH...(stETH...)
 
-### wcalc (fee is taken from value?)
--> (4.05 -  0.005704) / 4.05006 / (1-0.0004)
- = 0.998976  # nofee
--> (4.05 -  0.005704) / 4.05006
-~= 0.998577  # withfee
-
-### wcalc (value only)
+### wcalc
 -> 4.05 / 4.05006 / (1-0.0004)
  = 1.000385 # nofee
 -> 4.05 / 4.05006
@@ -39,7 +33,8 @@ curve reserves t0: 228871989532547285573980 t1: 231842932381382748377761 t0/t1 p
 curve get_dy t0 4050000000000000000 amount out t1 4050062454327729570 price t0/t1 0.9999845794161364514556492688 eth
 curve get_dy t1 4050062454327729570 amount out t0 4046756056724888802 price t0/t1 0.9991836181194421611955396804 eth
 quick curve loop eth->steth->eth -3306397602840768 wei profit = fee 0.0004
-curve get_dy t0 4050000000000000000 amount t1 4050062454327729570 t1 nofee 4051683127578761216 t0/t1 nofee price: 0.9995845855843699619484912326 eth
+curve get_dy t0 4050000000000000000 amount t1 4050062454327729570 price nofee 1.000384733309460191461635399
+
 
 * ERROR of wcalc tx price 0.9986 - poolnoodle get_dy price 0.9998 =  0.0012  (0.12% error) more expensive than poolnoodle price estimate
 

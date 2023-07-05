@@ -84,10 +84,9 @@ curve_calc_fee = abs((curve_amount3_wei - amount_to_send_wei) / amount_to_send_w
 print(
     f"quick curve loop eth->steth->eth {curve_amount3_wei - curve_amount_wei} wei profit = fee {curve_calc_fee:.4f}"
 )
-curve_amount_wei_nofee = int(curve_amount_wei / (1 - curve_fee))
-curve_price_nofee = Decimal(amount_to_send_wei) / Decimal(curve_amount_wei_nofee)
+curve_price_nofee = curve_price_wei / Decimal(1-curve_fee)
 print(
-    f"curve get_dy t0 {amount_to_send_wei} amount t1 {curve_amount_wei} t1 nofee {curve_amount_wei_nofee} t0/t1 nofee price: {curve_price_nofee} eth"
+    f"curve get_dy t0 {amount_to_send_wei} amount t1 {curve_amount_wei} price nofee {curve_price_nofee}",
 )
 
 uniswap_permit2_abi = Path("abi/permit2.abi").read_text()
