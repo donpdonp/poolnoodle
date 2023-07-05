@@ -37,8 +37,11 @@ else:
 print("Latest Ethereum block number", LAST_BLOCK)
 
 account = Account.from_key(CONFIG["keys"]["wallet"])
-balance_wei = w3.eth.get_balance(account.address)
-amount_to_send_wei = w3.to_wei(balance_wei * 0.9, "wei")  # 90% of balance
+if len(sys.argv) > 2 and sys.argv[2]:
+    balance_wei = int(sys.argv[2])
+else:
+    balance_wei = w3.eth.get_balance(account.address) * 0.9 # leave 10% for fees
+amount_to_send_wei = w3.to_wei(balance_wei, "wei")
 amount_to_send_eth = w3.from_wei(amount_to_send_wei, "ether")
 print(
     f"{account.address} balance {w3.from_wei(balance_wei, 'ether')} eth amount_to_send {amount_to_send_eth} eth"
