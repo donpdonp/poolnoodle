@@ -141,17 +141,13 @@ print(
 )
 
 uniswap_amount_out_wei = uniswap_router2.functions.getAmountOut(
-    w3.to_wei(1, "ether"), uniswap_reserves[1], uniswap_reserves[0]
+    amount_to_send_wei * 100, uniswap_reserves[1], uniswap_reserves[0]
 ).call(block_identifier=LAST_BLOCK)
+uniswap_amount_price = Decimal(amount_to_send_wei) / Decimal(uniswap_amount_out_wei)
 print(
-    f"uniswap getAmountOut 1 eth t1 {10**18} out t0 {uniswap_amount_out_wei} price {10**18 / uniswap_amount_out_wei} eth {uniswap_amount_out_wei / 10**18} steth"
+    f"uniswap getAmountOut 1 eth t1 {amount_to_send_wei * 100} out t0 {uniswap_amount_out_wei} price {amount_to_send_wei * 100 / uniswap_amount_out_wei} eth {uniswap_amount_out_wei / amount_to_send_wei * 100} steth"
 )
-uniswap_amount_out_wei = uniswap_router2.functions.getAmountOut(
-    w3.to_wei(7, "ether"), uniswap_reserves[1], uniswap_reserves[0]
-).call(block_identifier=LAST_BLOCK)
-print(
-    f"uniswap getAmountOut 7 eth t1 {7e18} out t0 {uniswap_amount_out_wei} price {7e18 / uniswap_amount_out_wei} eth {uniswap_amount_out_wei / 7e18} steth"
-)
+print(f"uniswap getAmount getAmounts price diff {uniswap_amount_price - uniswap_price_eth}")
 uniswap_amount_out2_wei = uniswap_router2.functions.getAmountOut(
     w3.to_wei(1, "ether"), uniswap_reserves[0], uniswap_reserves[1]
 ).call(block_identifier=LAST_BLOCK)
@@ -174,7 +170,6 @@ print(
     f"uniswap t1 {amount_to_send_wei} out t0 nofee {uniswap_amount_wei_nofee} price {uniswap_price_nofee}"
 )
 
-nonce = w3.eth.get_transaction_count(account.address)
 price_diff = abs(curve_price_nofee - uniswap_price_nofee)
 print(
     f"** price diff {price_diff:.6f} = curve_price_nofee {curve_price_nofee:.6f} - uniswap_price_nofee {uniswap_price_nofee:.6f}"
@@ -266,6 +261,7 @@ def uniswap_buy():
         print(f"Breakeven eth {gas_fee_eth*2/revenue_eth:.4f}")
 
 if price_diff > uniswap_fee + curve_fee:
+    nonce = w3.eth.get_transaction_count(account.address)
     if curve_price_nofee < uniswap_price_nofee:
         print(f"-> curve to uniswap")
         curve_buy()
