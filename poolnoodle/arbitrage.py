@@ -82,7 +82,7 @@ print(
 )
 curve_calc_fee = abs((curve_amount3_wei - amount_to_send_wei) / amount_to_send_wei / 2)
 print(
-    f"quick curve loop eth->steth->eth {curve_amount3_wei - curve_amount_wei} wei profit = fee {curve_calc_fee:.4f}"
+    f"curve loop eth->steth->eth profit {curve_amount3_wei - curve_amount_wei} wei. {curve_calc_fee *100:.2f}% fee"
 )
 curve_price_nofee = curve_price_wei / Decimal(1-curve_fee)
 print(
@@ -125,9 +125,6 @@ uniswap_reserve_price = uniswap_t1_reserve / uniswap_t0_reserve
 print(
     f"uniswap reserves t0: {uniswap_t0_reserve} t1: {uniswap_t1_reserve} price t1/t0 {uniswap_reserve_price} price w/ 0.3% fee {uniswap_reserve_price*(1+uniswap_fee)}"
 )
-print(
-    f"uniswap reserves t0: {uniswap_t0_reserve} t1: {uniswap_t1_reserve} price t0/t1 {1/uniswap_reserve_price} price w/ 0.3% fee {(1/uniswap_reserve_price)*(1-uniswap_fee)}"
-)
 
 uniswap_route_path = [uniswap_t1, uniswap_t0]
 # function getAmountsOut(uint amountIn, address[] memory path) internal view returns (uint[] memory amounts);
@@ -164,7 +161,7 @@ print(
 )
 uniswap_calc_fee = (1e18 - uniswap_amount_out3_wei) / 1e18 / 2
 print(
-    f"quick uniswap loop eth->steth->eth {uniswap_amount_out3_wei - 1e18} profit {uniswap_calc_fee*100:.2f}% fee"
+    f"uniswap loop eth->steth->eth {uniswap_amount_out3_wei - 1e18} profit. {uniswap_calc_fee*100:.2f}% fee"
 )
 uniswap_price_nofee = Decimal(amount_to_send_wei / uniswap_amount_wei) / Decimal(1 - uniswap_calc_fee)
 print(
