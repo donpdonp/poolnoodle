@@ -38,7 +38,7 @@ print("Latest Ethereum block number", LAST_BLOCK)
 
 account = Account.from_key(CONFIG["keys"]["wallet"])
 if len(sys.argv) > 2 and sys.argv[2]:
-    balance_wei = int(sys.argv[2])
+    balance_wei = w3.to_wei(sys.argv[2], 'ether')
 else:
     balance_wei = w3.eth.get_balance(account.address) * 0.9 # leave 10% for fees
 amount_to_send_wei = w3.to_wei(balance_wei, "wei")
@@ -55,13 +55,15 @@ curve = w3.eth.contract(address=curve_steth_pool_address, abi=curve_abi)
 curve_t0 = curve.functions.coins(0).call(block_identifier=LAST_BLOCK)
 curve_t1 = curve.functions.coins(1).call(block_identifier=LAST_BLOCK)
 curve_fee = curve.functions.fee().call(block_identifier=LAST_BLOCK) / 1e10
+curve_gas = 180000
+
 curve_A = curve.functions.A().call(block_identifier=LAST_BLOCK) 
 print(f"curve t0:{curve_t0} t1:{curve_t1} fee:{curve_fee} A:{curve_A}")
 curve_t0_reserve = curve.functions.balances(0).call(block_identifier=LAST_BLOCK)
 curve_t1_reserve = curve.functions.balances(1).call(block_identifier=LAST_BLOCK)
 curve_reserve_price = curve_t0_reserve / curve_t1_reserve
 print(
-    f"curve reserves t0: {curve_t0_reserve} t1: {curve_t1_reserve} t0/t1 price: {curve_reserve_price} w/ {curve_fee} fee price: {curve_reserve_price * (1+curve_fee)}"
+    f"curve reserves t0: {w3.from_wei(curve_t0_reserve, 'ether')} t1: {w3.from_wei(curve_t1_reserve, 'ether')} t0/t1 price: {curve_reserve_price} w/ {curve_fee} fee price: {curve_reserve_price * (1+curve_fee)}"
 )
 
 # def get_dy_underlying(i: int128, j: int128, dx: uint256) -> uint256:
@@ -121,9 +123,10 @@ uniswap_reserves = uniswap_pool.functions.getReserves().call(
 uniswap_t0_reserve = uniswap_reserves[0]
 uniswap_t1_reserve = uniswap_reserves[1]
 uniswap_fee = 0.003
+uniswap_gas = 240000
 uniswap_reserve_price = uniswap_t1_reserve / uniswap_t0_reserve
 print(
-    f"uniswap reserves t0: {uniswap_t0_reserve} t1: {uniswap_t1_reserve} price t1/t0 {uniswap_reserve_price} price w/ 0.3% fee {uniswap_reserve_price*(1+uniswap_fee)}"
+    f"uniswap reserves t0: {w3.from_wei(uniswap_t0_reserve, 'ether')} t1: {w3.from_wei(uniswap_t1_reserve, 'ether')} price t1/t0 {uniswap_reserve_price} price w/ 0.3% fee {uniswap_reserve_price*(1+uniswap_fee)}"
 )
 
 uniswap_route_path = [uniswap_t1, uniswap_t0]
@@ -178,6 +181,7 @@ print(f"** price diff {coinprint(price_diff, eth_price_usd)} - fee rate {uniswap
     f"= {coinprint(price_diff_after_fee, eth_price_usd)}")
 
 def curve_buy():
+    1
     # 0: eth 1: steth
     # exchange(i,j,dx,min_dy)
     # i: Index value for the coin to send
@@ -185,8 +189,8 @@ def curve_buy():
     # _dx: Amount of i being exchanged
     # _min_dy: Minimum amount of j to receive
     # Returns the actual amount of coin j received.
-    tx = curve.functions.exchange(0, 1, amount_to_send_wei, 0).estimate_gas()
-    print("curve tx ", tx)
+    #tx = curve.functions.exchange(0, 1, amount_to_send_wei, 0).estimate_gas()
+    #print("curve tx ", tx)
     # ttx = tx.build_transaction({"nonce": nonce})
     # print("curve build_transaction", ttx)
     # gas_estimate = w3.eth.estimate_gas(ttx)
