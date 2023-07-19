@@ -85,10 +85,7 @@ print(
 )
 curve_calc_fee = abs((curve_amount3_wei - amount_to_send_wei) / amount_to_send_wei / 2)
 print(
-    f"curve loop eth->steth->eth profit {curve_amount3_wei - curve_amount_wei} wei. {curve_calc_fee *100:.2f}% fee"
-)
-print(
-    f"curve get_dy t0 {amount_to_send_wei} amount t1 {curve_amount_wei} price nofee {curve_price_nofee}",
+    f"curve loop eth->steth->eth profit {curve_amount3_wei - curve_amount_wei} wei. {curve_calc_fee:.4f} fee"
 )
 
 uniswap_permit2_abi = Path("abi/permit2.abi").read_text()
@@ -109,10 +106,10 @@ uniswap_router2 = w3.eth.contract(
     address=uniswap_router2_address, abi=uniswap_router2_abi
 )
 
-uniswap_pool_allowance = uniswap_pool.functions.allowance(
-    uniswap_pool_address, account.address
-).call(block_identifier=LAST_BLOCK)
-print("uniswap_pool_allowance", uniswap_pool_allowance)
+#uniswap_pool_allowance = uniswap_pool.functions.allowance(
+#    uniswap_pool_address, account.address
+#).call(block_identifier=LAST_BLOCK)
+#print("uniswap_pool_allowance", uniswap_pool_allowance)
 
 uniswap_t0 = uniswap_pool.functions.token0().call(block_identifier=LAST_BLOCK)
 uniswap_t1 = uniswap_pool.functions.token1().call(block_identifier=LAST_BLOCK)
@@ -132,7 +129,7 @@ print(
 uniswap_amount_out_wei = uniswap_router2.functions.getAmountOut(
     curve_amount_wei, uniswap_reserves[1], uniswap_reserves[0]
 ).call(block_identifier=LAST_BLOCK)
-uniswap_amount_price = Decimal(amount_to_send_wei) / Decimal(uniswap_amount_out_wei)
+uniswap_amount_price = Decimal(curve_amount_wei) / Decimal(uniswap_amount_out_wei)
 uniswap_amount_price_nofee = uniswap_amount_price / Decimal(1-uniswap_fee)
 print(
     f"uniswap getAmountOut t1 {curve_amount_wei} out t0 {uniswap_amount_out_wei} price {uniswap_amount_out_wei / curve_amount_wei} eth"
@@ -142,14 +139,15 @@ uniswap_amount_out2_wei = uniswap_router2.functions.getAmountOut(
 ).call(block_identifier=LAST_BLOCK)
 uniswap_calc_fee = (curve_amount_wei - uniswap_amount_out2_wei) / 1e18 / 2
 print(
-    f"uniswap loop eth->steth->eth {uniswap_amount_out2_wei - curve_amount_wei} profit. {uniswap_calc_fee*100:.2f}% fee"
+    f"uniswap loop eth->steth->eth {uniswap_amount_out2_wei - curve_amount_wei} profit. {uniswap_calc_fee:.4f} fee"
 )
 
-price_diff = amount_to_send_wei - uniswap_amount_out_wei
+print(f"price_diff = amount_to_send_wei {amount_to_send_wei} - uniswap_amount_out_wei {uniswap_amount_out_wei}")
+price_diff_wei = abs(amount_to_send_wei - uniswap_amount_out_wei)
+total_fees_wei = amount_to_send_wei * (uniswap_fee + curve_fee)
 print(
-    f"** price diff {w3.from_wei(price_diff, 'ether'):.6f}"
+    f"** price diff {w3.from_wei(price_diff_wei, 'ether'):.6f} <> total_fees {w3.from_wei(total_fees_wei, 'ether'):.6f}"
 )
-
 
 def curve_buy():
     1
@@ -236,13 +234,13 @@ def uniswap_buy():
         print("STOP!")
         print(f"Breakeven eth {gas_fee_eth*2/revenue_eth:.4f}")
 
-if price_diff > uniswap_fee + curve_fee:
-    nonce = w3.eth.get_transaction_count(account.address)
-    if curve_price_nofee < uniswap_amount_price_nofee:
+if price_diff_wei > total_fees_wei:
+    #nonce = w3.eth.get_transaction_count(account.address)
+    if amount_to_send_wei < uniswap_amount_out_wei:
         print(f"-> curve to uniswap")
         curve_buy()
     else:
         print(f"-> uniswap to curve")
         uniswap_buy()
 else:
-    print(f"no opp")
+    print(f"no opp. fees exceed profit by {w3.from_wei(total_fees_wei - price_diff_wei, 'ether'):.6f} ")
