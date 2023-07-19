@@ -91,3 +91,12 @@ For 15.00022579904207887($28,897.63) stETH...(stETH...)
 uniswap getAmountsOut [t1, t0] [31782584486554572,        31653144181950627]  price 1.004089334818048025998404163 eth
 uniswap getAmountOut 1 eth t1  3178258448655457200 out t0 3157274133731201846 price 1.0066463392266343 eth 9933.975429426979 steth
 
+
+# manual call
+$ eth contract:call uniswap-router2 -n mainnet 'getAmountOut("5000000000000000000","1199304805730786051396","1191217339198831707306")'
+4930888236077653847
+
+
+# flash swap
+#
+https://github.com/Uniswap/v2-periphery/blob/master/contracts/examples/ExampleFlashSwap.sol
