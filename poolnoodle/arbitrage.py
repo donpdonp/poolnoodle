@@ -11,15 +11,12 @@ import sys
 from poolnoodle.coin import Coin
 from poolnoodle.pool import Pool
 import yaml
+from poolnoodle.util import *
 
 CONFIG = yaml.safe_load(Path("config.yaml").read_text())
 
 steth_coin = Coin("ethereum", "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
 weth_coin = Coin("ethereum", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
-
-
-def coinprint(v, usd):
-    return f"{v:.6f} (${v*usd:.2f})"
 
 
 logger = logging.getLogger()
@@ -135,7 +132,7 @@ def do_uniswap(starting_wei):
     uniswap_amount_price = Decimal(starting_wei) / Decimal(uniswap_amount_out_wei)
     uniswap_amount_price_nofee = uniswap_amount_price / Decimal(1 - uniswap_fee)
     print(
-        f"uniswap getAmountOut t1 {starting_wei} out t0 {uniswap_amount_out_wei} price {uniswap_amount_out_wei / starting_wei} eth"
+        f"uniswap getAmountOut t1 {starting_wei} out t0 {uniswap_amount_out_wei} price {starting_wei / uniswap_amount_out_wei} eth"
     )
     uniswap_amount_out2_wei = uniswap_router2.functions.getAmountOut(
         uniswap_amount_out_wei, uniswap_reserves[0], uniswap_reserves[1]
@@ -156,13 +153,13 @@ ending_wei = do_curve(a2)
 print(
     f"remaining_wei = amount_to_send_wei {amount_to_send_wei} - ending_wei {ending_wei}"
 )
-remaining_wei = abs(amount_to_send_wei - ending_wei)
+remaining_wei = ending_wei - amount_to_send_wei
 uniswap_gas = 240000
 curve_gas = 180000
 gas_price = 25  # todo
 total_gas_wei = (uniswap_gas + curve_gas) * 1e9 * gas_price
 print(
-    f"** remaining {w3.from_wei(remaining_wei, 'ether'):.6f} eth <> total_gas {w3.from_wei(total_gas_wei, 'ether'):.6f} eth"
+    f"** remaining {remaining_wei/1e18:.6f} eth - total_gas {w3.from_wei(total_gas_wei, 'ether'):.6f} eth"
 )
 
 if amount_to_send_wei < ending_wei:
