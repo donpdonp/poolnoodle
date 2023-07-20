@@ -75,17 +75,17 @@ def do_curve(amount_to_send_wei):
     print(
         f"curve get_dy t0 {amount_to_send_wei} amount out t1 {curve_amount_wei} price t0/t1 {curve_price_wei} eth"
     )
-    curve_amount3_wei = curve.functions.get_dy(1, 0, curve_amount_wei).call(
-        block_identifier=LAST_BLOCK
-    )
-    curve_price3_wei = Decimal(curve_amount3_wei) / Decimal(curve_amount_wei)
+    # curve_amount3_wei = curve.functions.get_dy(1, 0, curve_amount_wei).call(
+    #     block_identifier=LAST_BLOCK
+    # )
+    # curve_price3_wei = Decimal(curve_amount3_wei) / Decimal(curve_amount_wei)
     # print(
     #     f"curve get_dy t1 {curve_amount_wei} amount out t0 {curve_amount3_wei} price t0/t1 {curve_price3_wei} eth"
     # )
-    curve_price_change = (curve_price_wei - curve_price3_wei) / Decimal(1-curve_fee)
-    print(
-        f"curve loop eth->steth->eth profit {curve_amount3_wei - curve_amount_wei} wei. {curve_price_change} price change"
-    )
+    # curve_price_change = (curve_price_wei - curve_price3_wei) / Decimal(1-curve_fee)
+    # print(
+    #     f"curve loop eth->steth->eth profit {curve_amount3_wei - curve_amount_wei} wei. {curve_price_change} price change"
+    # )
     return curve_amount_wei
 
 def do_uniswap(starting_wei):
@@ -134,14 +134,14 @@ def do_uniswap(starting_wei):
     print(
         f"uniswap getAmountOut t1 {starting_wei} out t0 {uniswap_amount_out_wei} price {starting_wei / uniswap_amount_out_wei} eth"
     )
-    uniswap_amount_out2_wei = uniswap_router2.functions.getAmountOut(
-        uniswap_amount_out_wei, uniswap_reserves[0], uniswap_reserves[1]
-    ).call(block_identifier=LAST_BLOCK)
-    uniswap_calc_price = Decimal(uniswap_amount_out2_wei) / Decimal(starting_wei)
-    uniswap_price_change = (uniswap_calc_price - uniswap_amount_price) / Decimal(1-uniswap_fee)
-    print(
-        f"uniswap loop eth->steth->eth {uniswap_amount_out2_wei - starting_wei} profit. {uniswap_price_change} price change"
-    )
+    # uniswap_amount_out2_wei = uniswap_router2.functions.getAmountOut(
+    #     uniswap_amount_out_wei, uniswap_reserves[0], uniswap_reserves[1]
+    # ).call(block_identifier=LAST_BLOCK)
+    # uniswap_calc_price = Decimal(uniswap_amount_out2_wei) / Decimal(starting_wei)
+    # uniswap_price_change = (uniswap_calc_price - uniswap_amount_price) / Decimal(1-uniswap_fee)
+    # print(
+    #     f"uniswap loop eth->steth->eth {uniswap_amount_out2_wei - starting_wei} profit. {uniswap_price_change} price change"
+    # )
     return uniswap_amount_out_wei
 
 
@@ -158,8 +158,9 @@ uniswap_gas = 240000
 curve_gas = 180000
 gas_price = 25  # todo
 total_gas_wei = (uniswap_gas + curve_gas) * 1e9 * gas_price
+pl_word = "profit" if remaining_wei > 0 else "loss"
 print(
-    f"** remaining {remaining_wei/1e18:.6f} eth - total_gas {w3.from_wei(total_gas_wei, 'ether'):.6f} eth"
+    f"** {pl_word} {remaining_wei/1e18:.6f} eth - total_gas {w3.from_wei(total_gas_wei, 'ether'):.6f} eth"
 )
 
 if amount_to_send_wei < ending_wei:
