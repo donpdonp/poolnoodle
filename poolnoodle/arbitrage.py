@@ -9,6 +9,7 @@ import logging
 import time
 import sys
 from poolnoodle.coin import Coin
+from poolnoodle.pool import Pool
 import yaml
 
 CONFIG = yaml.safe_load(Path("config.yaml").read_text())
@@ -54,8 +55,8 @@ def do_curve(amount_to_send_wei):
     curve_abi = Path("abi/curve.abi").read_text()
     curve = w3.eth.contract(address=curve_steth_pool_address, abi=curve_abi)
 
-    curve_t0 = curve.functions.coins(0).call(block_identifier=LAST_BLOCK)
-    curve_t1 = curve.functions.coins(1).call(block_identifier=LAST_BLOCK)
+    curve_t0 = curve.functions.coins(0).call(block_identifier=LAST_BLOCK) #eth
+    curve_t1 = curve.functions.coins(1).call(block_identifier=LAST_BLOCK) #steth
     curve_fee = curve.functions.fee().call(block_identifier=LAST_BLOCK) / 1e10
 
     curve_A = curve.functions.A().call(block_identifier=LAST_BLOCK)
@@ -90,7 +91,7 @@ def do_curve(amount_to_send_wei):
     )
     return curve_amount_wei
 
-def do_uniswap(curve_amount_wei):
+def do_uniswap(starting_wei):
     uniswap_permit2_abi = Path("abi/permit2.abi").read_text()
     uniswap_permit2_address = "0x000000000022D473030F116dDEE9F6B43aC78BA3"
     uniswap_permit2 = w3.eth.contract(
@@ -114,8 +115,8 @@ def do_uniswap(curve_amount_wei):
     # ).call(block_identifier=LAST_BLOCK)
     # print("uniswap_pool_allowance", uniswap_pool_allowance)
 
-    uniswap_t0 = uniswap_pool.functions.token0().call(block_identifier=LAST_BLOCK)
-    uniswap_t1 = uniswap_pool.functions.token1().call(block_identifier=LAST_BLOCK)
+    uniswap_t0 = uniswap_pool.functions.token0().call(block_identifier=LAST_BLOCK) #steth
+    uniswap_t1 = uniswap_pool.functions.token1().call(block_identifier=LAST_BLOCK) #weth
     print(f"uniswap t0: {uniswap_t0} t1: {uniswap_t1}")
     uniswap_reserves = uniswap_pool.functions.getReserves().call(
         block_identifier=LAST_BLOCK
@@ -129,20 +130,20 @@ def do_uniswap(curve_amount_wei):
     )
 
     uniswap_amount_out_wei = uniswap_router2.functions.getAmountOut(
-        curve_amount_wei, uniswap_reserves[1], uniswap_reserves[0]
+        starting_wei, uniswap_reserves[1], uniswap_reserves[0]
     ).call(block_identifier=LAST_BLOCK)
-    uniswap_amount_price = Decimal(curve_amount_wei) / Decimal(uniswap_amount_out_wei)
+    uniswap_amount_price = Decimal(starting_wei) / Decimal(uniswap_amount_out_wei)
     uniswap_amount_price_nofee = uniswap_amount_price / Decimal(1 - uniswap_fee)
     print(
-        f"uniswap getAmountOut t1 {curve_amount_wei} out t0 {uniswap_amount_out_wei} price {uniswap_amount_out_wei / curve_amount_wei} eth"
+        f"uniswap getAmountOut t1 {starting_wei} out t0 {uniswap_amount_out_wei} price {uniswap_amount_out_wei / starting_wei} eth"
     )
     uniswap_amount_out2_wei = uniswap_router2.functions.getAmountOut(
         uniswap_amount_out_wei, uniswap_reserves[0], uniswap_reserves[1]
     ).call(block_identifier=LAST_BLOCK)
-    uniswap_calc_price = Decimal(uniswap_amount_out2_wei) / Decimal(curve_amount_wei)
+    uniswap_calc_price = Decimal(uniswap_amount_out2_wei) / Decimal(starting_wei)
     uniswap_price_change = (uniswap_calc_price - uniswap_amount_price) / Decimal(1-uniswap_fee)
     print(
-        f"uniswap loop eth->steth->eth {uniswap_amount_out2_wei - curve_amount_wei} profit. {uniswap_price_change} price change"
+        f"uniswap loop eth->steth->eth {uniswap_amount_out2_wei - starting_wei} profit. {uniswap_price_change} price change"
     )
     return uniswap_amount_out_wei
 
