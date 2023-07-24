@@ -46,7 +46,7 @@ print(
     f"{account.address} balance {w3.from_wei(balance_wei, 'ether')} eth amount_to_send {amount_to_send_eth} eth"
 )
 
-def do_curve(amount_to_send_wei):
+def do_curve(amount_to_send_wei: Decimal):
     curve_steth_pool_address = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"  # steth
     # https://curve.fi/#/ethereum/pools/steth/deposit
     curve_abi = Path("abi/curve.abi").read_text()
@@ -88,7 +88,7 @@ def do_curve(amount_to_send_wei):
     # )
     return curve_amount_wei
 
-def do_uniswap(starting_wei):
+def do_uniswap(starting_wei: Decimal):
     uniswap_permit2_abi = Path("abi/permit2.abi").read_text()
     uniswap_permit2_address = "0x000000000022D473030F116dDEE9F6B43aC78BA3"
     uniswap_permit2 = w3.eth.contract(
@@ -114,23 +114,23 @@ def do_uniswap(starting_wei):
 
     uniswap_t0 = uniswap_pool.functions.token0().call(block_identifier=LAST_BLOCK) #steth
     uniswap_t1 = uniswap_pool.functions.token1().call(block_identifier=LAST_BLOCK) #weth
-    uniswap_fee = 0.003
+    uniswap_fee: Decimal = Decimal(0.003)
     print(f"uniswap t0: {uniswap_t0} t1: {uniswap_t1} fee: {uniswap_fee}")
     uniswap_reserves = uniswap_pool.functions.getReserves().call(
         block_identifier=LAST_BLOCK
     )
-    uniswap_t0_reserve = uniswap_reserves[0]
-    uniswap_t1_reserve = uniswap_reserves[1]
-    uniswap_reserve_price = uniswap_t1_reserve / uniswap_t0_reserve
+    uniswap_t0_reserve: Decimal = Decimal(uniswap_reserves[0])
+    uniswap_t1_reserve: Decimal = Decimal(uniswap_reserves[1])
+    uniswap_reserve_price: Decimal = uniswap_t1_reserve / uniswap_t0_reserve
     print(
-        f"uniswap reserves t0: {w3.from_wei(uniswap_t0_reserve, 'ether')} t1: {w3.from_wei(uniswap_t1_reserve, 'ether')} reserve price t1/t0 {uniswap_reserve_price} w/ fee {uniswap_reserve_price*(1+uniswap_fee)}"
+        f"uniswap reserves t0: {uniswap_t0_reserve} t1: {uniswap_t1_reserve} reserve price t1/t0 {uniswap_reserve_price} w/ fee {uniswap_reserve_price/Decimal(1-uniswap_fee)}"
     )
 
-    uniswap_amount_out_wei = uniswap_router2.functions.getAmountOut(
+    uniswap_amount_out_wei: Decimal = uniswap_router2.functions.getAmountOut(
         starting_wei, uniswap_reserves[1], uniswap_reserves[0]
     ).call(block_identifier=LAST_BLOCK)
-    uniswap_amount_price = Decimal(starting_wei) / Decimal(uniswap_amount_out_wei)
-    uniswap_amount_price_nofee = uniswap_amount_price / Decimal(1 - uniswap_fee)
+    uniswap_amount_price: Decimal = starting_wei / Decimal(uniswap_amount_out_wei)
+    uniswap_amount_price_nofee: Decimal = uniswap_amount_price / Decimal(1 - uniswap_fee)
     print(
         f"uniswap getAmountOut t1 {starting_wei} out t0 {uniswap_amount_out_wei} price {starting_wei / uniswap_amount_out_wei} eth"
     )
