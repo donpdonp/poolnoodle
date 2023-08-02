@@ -6,7 +6,8 @@ from typing import List
 def price(A: int, x: Decimal, y: Decimal, x_add: Decimal):
     # constant sum -> D = (x+y)
     # constant product -> (D/2)^2 =  (x*y)
-    return get_D([x,y], A)
+    out = get_D([x + x_add, y], A)
+    return x_add / out
 
 def get_D(xp: List[Decimal], amp: int) -> Decimal:
     """

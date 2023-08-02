@@ -26,24 +26,27 @@ def do_curve(amount_to_send_wei: Decimal):
     curve_steth_pool_address = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"  # steth
     # https://curve.fi/#/ethereum/pools/steth/deposit
     curve_abi = Path("abi/curve.abi").read_text()
-    curve = w3.eth.contract(address=curve_steth_pool_address, abi=curve_abi)
+    curve_pool = w3.eth.contract(address=curve_steth_pool_address, abi=curve_abi)
 
-    curve_t0 = curve.functions.coins(0).call(block_identifier=LAST_BLOCK)  # eth
-    curve_t1 = curve.functions.coins(1).call(block_identifier=LAST_BLOCK)  # steth
-    curve_fee = curve.functions.fee().call(block_identifier=LAST_BLOCK) / 1e10
+    curve_t0 = curve_pool.functions.coins(0).call(block_identifier=LAST_BLOCK)  # eth
+    curve_t1 = curve_pool.functions.coins(1).call(block_identifier=LAST_BLOCK)  # steth
+    curve_fee = Decimal(curve_pool.functions.fee().call(block_identifier=LAST_BLOCK)) / Decimal(1e10)
+    
 
-    curve_A = curve.functions.A().call(block_identifier=LAST_BLOCK)
+    curve_A = curve_pool.functions.A().call(block_identifier=LAST_BLOCK)
     print(f"curve t0:{curve_t0} t1:{curve_t1} fee:{curve_fee} A:{curve_A}")
-    curve_t0_reserve = curve.functions.balances(0).call(block_identifier=LAST_BLOCK)
-    curve_t1_reserve = curve.functions.balances(1).call(block_identifier=LAST_BLOCK)
+    curve_t0_reserve: Decimal = Decimal(curve_pool.functions.balances(0).call(block_identifier=LAST_BLOCK))
+    curve_t1_reserve: Decimal = Decimal(curve_pool.functions.balances(1).call(block_identifier=LAST_BLOCK))
     curve_reserve_price = curve_t0_reserve / curve_t1_reserve
     print(
         f"curve reserves t0: {w3.from_wei(curve_t0_reserve, 'ether')} t1: {w3.from_wei(curve_t1_reserve, 'ether')} reserve price t0/t1: {curve_reserve_price} w/ {curve_fee} fee price: {curve_reserve_price * (1+curve_fee)}"
     )
+    curve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, amount_to_send_wei)
+    print(f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)}")
 
     # def get_dy_underlying(i: int128, j: int128, dx: uint256) -> uint256:
     # How much of underlying token j you'll get in exchange for dx of token i, including the fee.
-    curve_amount_wei = curve.functions.get_dy(0, 1, amount_to_send_wei).call(
+    curve_amount_wei = curve_pool.functions.get_dy(0, 1, amount_to_send_wei).call(
         block_identifier=LAST_BLOCK
     )
     curve_price_wei = Decimal(amount_to_send_wei) / Decimal(curve_amount_wei)
@@ -108,7 +111,7 @@ def do_uniswap(starting_wei: Decimal):
     )
 
     uniswap_calc_price = uniswap.price(uniswap_t1_reserve, uniswap_t0_reserve, starting_wei)
-    print(f"CALC PRICE {uniswap_calc_price } w/ fee {uniswap_calc_price*(1+uniswap_fee)}")
+    print(f"uniswap calc price {uniswap_calc_price } w/ fee {uniswap_calc_price*(1+uniswap_fee)}")
 
     uniswap_amount_out_wei: Decimal = uniswap_router2.functions.getAmountOut(
         starting_wei, uniswap_reserves[1], uniswap_reserves[0]
@@ -130,7 +133,6 @@ def do_uniswap(starting_wei: Decimal):
     # )
     return uniswap_amount_out_wei
 
-curve.get_D([Decimal(1),Decimal(2)], 3)
 logger = logger_init()
 steth_coin = Coin("ethereum", "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
 weth_coin = Coin("ethereum", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
