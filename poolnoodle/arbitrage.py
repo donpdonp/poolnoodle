@@ -1,50 +1,25 @@
-from web3.datastructures import AttributeDict
-from web3 import Web3, HTTPProvider
-import web3.constants
-from pathlib import Path
-import requests
-from eth_account import Account
-from decimal import *
 import logging
 import time
 import sys
+import yaml
+import requests
+import web3.constants
+from web3.datastructures import AttributeDict
+from web3 import Web3, HTTPProvider
+from pathlib import Path
+from eth_account import Account
+from decimal import *
 from poolnoodle.coin import Coin
 from poolnoodle.pool import Pool
-import yaml
 from poolnoodle.util import *
 
 CONFIG = yaml.safe_load(Path("config.yaml").read_text())
 
-steth_coin = Coin("ethereum", "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
-weth_coin = Coin("ethereum", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
+def logger_init():
+    logger = logging.getLogger()
+    logging.getLogger("web3.RequestManager").setLevel(logging.DEBUG)
+    return logger
 
-
-logger = logging.getLogger()
-logging.getLogger("web3.RequestManager").setLevel(logging.DEBUG)
-
-COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=ethereum,staked-ether"
-coin_prices = requests.get(COINGECKO_URL).json()
-eth_price_usd = Decimal(coin_prices[0]["current_price"])
-steth_price_usd = Decimal(coin_prices[1]["current_price"])
-
-INFURA_URL = "https://mainnet.infura.io/v3/" + CONFIG["keys"]["infura"]
-w3 = Web3(HTTPProvider(INFURA_URL))
-if len(sys.argv) > 1 and sys.argv[1]:
-    LAST_BLOCK = int(sys.argv[1])
-else:
-    LAST_BLOCK = w3.eth.block_number
-print("Latest Ethereum block number", LAST_BLOCK)
-
-account = Account.from_key(CONFIG["keys"]["wallet"])
-if len(sys.argv) > 2 and sys.argv[2]:
-    balance_wei = w3.to_wei(sys.argv[2], "ether")
-else:
-    balance_wei = w3.eth.get_balance(account.address) * 0.9  # leave 10% for fees
-amount_to_send_wei = w3.to_wei(balance_wei, "wei")
-amount_to_send_eth = w3.from_wei(amount_to_send_wei, "ether")
-print(
-    f"{account.address} balance {w3.from_wei(balance_wei, 'ether')} eth amount_to_send {amount_to_send_eth} eth"
-)
 
 def do_curve(amount_to_send_wei: Decimal):
     curve_steth_pool_address = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"  # steth
@@ -52,8 +27,8 @@ def do_curve(amount_to_send_wei: Decimal):
     curve_abi = Path("abi/curve.abi").read_text()
     curve = w3.eth.contract(address=curve_steth_pool_address, abi=curve_abi)
 
-    curve_t0 = curve.functions.coins(0).call(block_identifier=LAST_BLOCK) #eth
-    curve_t1 = curve.functions.coins(1).call(block_identifier=LAST_BLOCK) #steth
+    curve_t0 = curve.functions.coins(0).call(block_identifier=LAST_BLOCK)  # eth
+    curve_t1 = curve.functions.coins(1).call(block_identifier=LAST_BLOCK)  # steth
     curve_fee = curve.functions.fee().call(block_identifier=LAST_BLOCK) / 1e10
 
     curve_A = curve.functions.A().call(block_identifier=LAST_BLOCK)
@@ -88,6 +63,7 @@ def do_curve(amount_to_send_wei: Decimal):
     # )
     return curve_amount_wei
 
+
 def do_uniswap(starting_wei: Decimal):
     uniswap_permit2_abi = Path("abi/permit2.abi").read_text()
     uniswap_permit2_address = "0x000000000022D473030F116dDEE9F6B43aC78BA3"
@@ -112,8 +88,12 @@ def do_uniswap(starting_wei: Decimal):
     # ).call(block_identifier=LAST_BLOCK)
     # print("uniswap_pool_allowance", uniswap_pool_allowance)
 
-    uniswap_t0 = uniswap_pool.functions.token0().call(block_identifier=LAST_BLOCK) #steth
-    uniswap_t1 = uniswap_pool.functions.token1().call(block_identifier=LAST_BLOCK) #weth
+    uniswap_t0 = uniswap_pool.functions.token0().call(
+        block_identifier=LAST_BLOCK
+    )  # steth
+    uniswap_t1 = uniswap_pool.functions.token1().call(
+        block_identifier=LAST_BLOCK
+    )  # weth
     uniswap_fee: Decimal = Decimal(0.003)
     print(f"uniswap t0: {uniswap_t0} t1: {uniswap_t1} fee: {uniswap_fee}")
     uniswap_reserves = uniswap_pool.functions.getReserves().call(
@@ -130,7 +110,9 @@ def do_uniswap(starting_wei: Decimal):
         starting_wei, uniswap_reserves[1], uniswap_reserves[0]
     ).call(block_identifier=LAST_BLOCK)
     uniswap_amount_price: Decimal = starting_wei / Decimal(uniswap_amount_out_wei)
-    uniswap_amount_price_nofee: Decimal = uniswap_amount_price / Decimal(1 - uniswap_fee)
+    uniswap_amount_price_nofee: Decimal = uniswap_amount_price / Decimal(
+        1 - uniswap_fee
+    )
     print(
         f"uniswap getAmountOut t1 {starting_wei} out t0 {uniswap_amount_out_wei} price {starting_wei / uniswap_amount_out_wei} eth"
     )
@@ -144,6 +126,33 @@ def do_uniswap(starting_wei: Decimal):
     # )
     return uniswap_amount_out_wei
 
+logger = logger_init()
+steth_coin = Coin("ethereum", "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
+weth_coin = Coin("ethereum", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
+
+COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=ethereum,staked-ether"
+coin_prices = requests.get(COINGECKO_URL).json()
+eth_price_usd = Decimal(coin_prices[0]["current_price"])
+steth_price_usd = Decimal(coin_prices[1]["current_price"])
+
+INFURA_URL = "https://mainnet.infura.io/v3/" + CONFIG["keys"]["infura"]
+w3 = Web3(HTTPProvider(INFURA_URL))
+if len(sys.argv) > 1 and sys.argv[1]:
+    LAST_BLOCK = int(sys.argv[1])
+else:
+    LAST_BLOCK = w3.eth.block_number
+print("Latest Ethereum block number", LAST_BLOCK)
+
+account = Account.from_key(CONFIG["keys"]["wallet"])
+if len(sys.argv) > 2 and sys.argv[2]:
+    balance_wei = w3.to_wei(sys.argv[2], "ether")
+else:
+    balance_wei = w3.eth.get_balance(account.address) * 0.9  # leave 10% for fees
+amount_to_send_wei = w3.to_wei(balance_wei, "wei")
+amount_to_send_eth = w3.from_wei(amount_to_send_wei, "ether")
+print(
+    f"{account.address} balance {w3.from_wei(balance_wei, 'ether')} eth amount_to_send {amount_to_send_eth} eth"
+)
 
 # a2 = do_curve(amount_to_send_wei)
 # ending_wei = do_uniswap(a2)
