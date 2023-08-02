@@ -9,7 +9,7 @@ from web3 import Web3, HTTPProvider
 from pathlib import Path
 from eth_account import Account
 from decimal import *
-from poolnoodle import uniswap
+from poolnoodle import uniswap,curve
 from poolnoodle.coin import Coin
 from poolnoodle.pool import Pool
 from poolnoodle.util import *
@@ -130,7 +130,7 @@ def do_uniswap(starting_wei: Decimal):
     # )
     return uniswap_amount_out_wei
 
-
+curve.get_D([Decimal(1),Decimal(2)], 3)
 logger = logger_init()
 steth_coin = Coin("ethereum", "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
 weth_coin = Coin("ethereum", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
