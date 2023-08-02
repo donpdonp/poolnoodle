@@ -9,6 +9,7 @@ from web3 import Web3, HTTPProvider
 from pathlib import Path
 from eth_account import Account
 from decimal import *
+from poolnoodle import uniswap
 from poolnoodle.coin import Coin
 from poolnoodle.pool import Pool
 from poolnoodle.util import *
@@ -106,6 +107,9 @@ def do_uniswap(starting_wei: Decimal):
         f"uniswap reserves t0: {uniswap_t0_reserve} t1: {uniswap_t1_reserve} reserve price t1/t0 {uniswap_reserve_price} w/ fee {uniswap_reserve_price/Decimal(1-uniswap_fee)}"
     )
 
+    uniswap_calc_price = uniswap.price(uniswap_t1_reserve, uniswap_t0_reserve, starting_wei)
+    print(f"CALC PRICE {uniswap_calc_price } w/ fee {uniswap_calc_price*(1+uniswap_fee)}")
+
     uniswap_amount_out_wei: Decimal = uniswap_router2.functions.getAmountOut(
         starting_wei, uniswap_reserves[1], uniswap_reserves[0]
     ).call(block_identifier=LAST_BLOCK)
@@ -125,6 +129,7 @@ def do_uniswap(starting_wei: Decimal):
     #     f"uniswap loop eth->steth->eth {uniswap_amount_out2_wei - starting_wei} profit. {uniswap_price_change} price change"
     # )
     return uniswap_amount_out_wei
+
 
 logger = logger_init()
 steth_coin = Coin("ethereum", "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")
