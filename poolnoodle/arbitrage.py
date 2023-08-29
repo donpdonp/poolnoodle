@@ -41,8 +41,10 @@ def do_curve(amount_to_send_wei: Decimal):
     print(
         f"curve reserves t0: {w3.from_wei(curve_t0_reserve, 'ether')} t1: {w3.from_wei(curve_t1_reserve, 'ether')} reserve price t0/t1: {curve_reserve_price} w/ {curve_fee} fee price: {curve_reserve_price * (1+curve_fee)}"
     )
+    curve_reserve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, Decimal(1))
+    print(f"curve reserve calc price {curve_reserve_calc_price} w/ fee {curve_reserve_calc_price * (1+curve_fee)} (fee {curve_fee})")
     curve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, amount_to_send_wei)
-    print(f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)}")
+    print(f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)} after buying {amount_to_send_wei}")
 
     # def get_dy_underlying(i: int128, j: int128, dx: uint256) -> uint256:
     # How much of underlying token j you'll get in exchange for dx of token i, including the fee.
@@ -110,8 +112,10 @@ def do_uniswap(starting_wei: Decimal):
         f"uniswap reserves t0: {uniswap_t0_reserve} t1: {uniswap_t1_reserve} reserve price t1/t0 {uniswap_reserve_price} w/ fee {uniswap_reserve_price/Decimal(1-uniswap_fee)}"
     )
 
+    uniswap_reserve_calc_price = uniswap.price(uniswap_t1_reserve, uniswap_t0_reserve, Decimal(1))
+    print(f"uniswap reserve calc price {uniswap_reserve_calc_price} w/ fee {uniswap_reserve_calc_price * (1+uniswap_fee)} (fee {uniswap_fee})")
     uniswap_calc_price = uniswap.price(uniswap_t1_reserve, uniswap_t0_reserve, starting_wei)
-    print(f"uniswap calc price {uniswap_calc_price } w/ fee {uniswap_calc_price*(1+uniswap_fee)}")
+    print(f"uniswap calc price {uniswap_calc_price } w/ fee {uniswap_calc_price*(1+uniswap_fee)} after purchase of {starting_wei} wei")
 
     uniswap_amount_out_wei: Decimal = uniswap_router2.functions.getAmountOut(
         starting_wei, uniswap_reserves[1], uniswap_reserves[0]

@@ -9,6 +9,8 @@ def price(A: int, x: Decimal, y: Decimal, x_add: Decimal):
     out = get_D([x + x_add, y], A)
     return x_add / out
 
+
+# https://github.com/curvefi/curve-contract/blob/master/contracts/pools/steth/StableSwapSTETH.vy#L211
 def get_D(xp: List[Decimal], amp: int) -> Decimal:
     """
     D invariant calculation in non-overflowing integer operations
