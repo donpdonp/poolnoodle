@@ -41,9 +41,9 @@ def do_curve(amount_to_send_wei: Decimal):
     print(
         f"curve reserves t0: {w3.from_wei(curve_t0_reserve, 'ether')} t1: {w3.from_wei(curve_t1_reserve, 'ether')} reserve price t0/t1: {curve_reserve_price} w/ {curve_fee} fee price: {curve_reserve_price * (1+curve_fee)}"
     )
-    curve_reserve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, Decimal(1))
+    curve_reserve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, Decimal(1), curve_fee)
     print(f"curve reserve calc price {curve_reserve_calc_price} w/ fee {curve_reserve_calc_price * (1+curve_fee)} (fee {curve_fee})")
-    curve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, amount_to_send_wei)
+    curve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, amount_to_send_wei, curve_fee)
     print(f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)} after buying {amount_to_send_wei}")
 
     # def get_dy_underlying(i: int128, j: int128, dx: uint256) -> uint256:
