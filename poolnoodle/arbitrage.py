@@ -22,7 +22,7 @@ def logger_init():
     return logger
 
 
-def do_curve(amount_to_send_wei: Decimal):
+def do_curve(amount_to_send_wei: Decimal, buy: bool):
     curve_steth_pool_address = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"  # steth
     # https://curve.fi/#/ethereum/pools/steth/deposit
     curve_abi = Path("abi/curve.abi").read_text()
@@ -46,9 +46,15 @@ def do_curve(amount_to_send_wei: Decimal):
     curve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, amount_to_send_wei, curve_fee)
     print(f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)} after buying {amount_to_send_wei}")
 
+    if buy:
+        in_market = 0
+        out_market = 1
+    else:
+        in_market = 1
+        out_market = 0
     # def get_dy_underlying(i: int128, j: int128, dx: uint256) -> uint256:
     # How much of underlying token j you'll get in exchange for dx of token i, including the fee.
-    curve_amount_wei = curve_pool.functions.get_dy(0, 1, amount_to_send_wei).call(
+    curve_amount_wei = curve_pool.functions.get_dy(in_market, out_market, amount_to_send_wei).call(
         block_identifier=LAST_BLOCK
     )
     curve_price_wei = Decimal(amount_to_send_wei) / Decimal(curve_amount_wei)
@@ -70,7 +76,7 @@ def do_curve(amount_to_send_wei: Decimal):
     return curve_amount_wei
 
 
-def do_uniswap(starting_wei: Decimal):
+def do_uniswap(starting_wei: Decimal, buy: bool):
     uniswap_permit2_abi = Path("abi/permit2.abi").read_text()
     uniswap_permit2_address = "0x000000000022D473030F116dDEE9F6B43aC78BA3"
     uniswap_permit2 = w3.eth.contract(
@@ -117,8 +123,16 @@ def do_uniswap(starting_wei: Decimal):
     uniswap_calc_price = uniswap.price(uniswap_t1_reserve, uniswap_t0_reserve, starting_wei)
     print(f"uniswap calc price {uniswap_calc_price } w/ fee {uniswap_calc_price*(1+uniswap_fee)} after purchase of {starting_wei} wei")
 
+    if buy:
+        in_market = 1
+        out_market = 0
+    else:
+        in_market = 0
+        out_market = 1
+    # // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
+    # function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
     uniswap_amount_out_wei: Decimal = uniswap_router2.functions.getAmountOut(
-        starting_wei, uniswap_reserves[1], uniswap_reserves[0]
+        starting_wei, uniswap_reserves[in_market], uniswap_reserves[out_market]
     ).call(block_identifier=LAST_BLOCK)
     uniswap_amount_price: Decimal = starting_wei / Decimal(uniswap_amount_out_wei)
     uniswap_amount_price_nofee: Decimal = uniswap_amount_price / Decimal(
@@ -165,10 +179,10 @@ print(
     f"{account.address} balance {w3.from_wei(balance_wei, 'ether')} eth amount_to_send {amount_to_send_eth} eth"
 )
 
-# a2 = do_curve(amount_to_send_wei)
-# ending_wei = do_uniswap(a2)
-a2 = do_uniswap(amount_to_send_wei)
-ending_wei = do_curve(a2)
+#a2 = do_curve(amount_to_send_wei, True)
+#ending_wei = do_uniswap(a2, False)
+a2 = do_uniswap(amount_to_send_wei, True)
+ending_wei = do_curve(a2, False)
 
 print(
     f"remaining_wei = amount_to_send_wei {amount_to_send_wei} - ending_wei {ending_wei}"
