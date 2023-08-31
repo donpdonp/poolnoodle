@@ -179,10 +179,15 @@ print(
     f"{account.address} balance {w3.from_wei(balance_wei, 'ether')} eth amount_to_send {amount_to_send_eth} eth"
 )
 
-#a2 = do_curve(amount_to_send_wei, True)
-#ending_wei = do_uniswap(a2, False)
-a2 = do_uniswap(amount_to_send_wei, True)
-ending_wei = do_curve(a2, False)
+cleft = do_curve(amount_to_send_wei, True)
+cu_ending_wei = do_uniswap(cleft, False)
+print(f"-> curve->uniswap {w3.from_wei(cu_ending_wei, 'ether')}")
+uleft = do_uniswap(amount_to_send_wei, True)
+uc_ending_wei = do_curve(uleft, False)
+print(f"-> uniswap->curve {w3.from_wei(uc_ending_wei, 'ether')}")
+ending_wei = cu_ending_wei
+if uc_ending_wei > cu_ending_wei:
+    ending_wei = uc_ending_wei
 
 print(
     f"remaining_wei = amount_to_send_wei {amount_to_send_wei} - ending_wei {ending_wei}"
@@ -196,13 +201,6 @@ pl_word = "profit" if remaining_wei > 0 else "loss"
 print(
     f"** {pl_word} {remaining_wei/1e18:.6f} eth - total_gas {w3.from_wei(total_gas_wei, 'ether'):.6f} eth"
 )
-
-if amount_to_send_wei < ending_wei:
-    print(f"-> go forwards (ending balance larger than starting)")
-    # curve_buy()
-else:
-    print(f"-> go backwards (ending balance smaller than starting)")
-    # uniswap_buy()
 
 if remaining_wei > total_gas_wei:
     nonce = w3.eth.get_transaction_count(account.address)
