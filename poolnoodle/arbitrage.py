@@ -118,17 +118,18 @@ def do_uniswap(starting_wei: Decimal, buy: bool):
         f"uniswap reserves t0: {uniswap_t0_reserve} t1: {uniswap_t1_reserve} reserve price t1/t0 {uniswap_reserve_price} w/ fee {uniswap_reserve_price/Decimal(1-uniswap_fee)}"
     )
 
-    uniswap_reserve_calc_price = uniswap.price(uniswap_t1_reserve, uniswap_t0_reserve, Decimal(1))
-    print(f"uniswap reserve calc price {uniswap_reserve_calc_price} w/ fee {uniswap_reserve_calc_price * (1+uniswap_fee)} (fee {uniswap_fee})")
-    uniswap_calc_price = uniswap.price(uniswap_t1_reserve, uniswap_t0_reserve, starting_wei)
-    print(f"uniswap calc price {uniswap_calc_price } w/ fee {uniswap_calc_price*(1+uniswap_fee)} after purchase of {starting_wei} wei")
-
     if buy:
         in_market = 1
         out_market = 0
     else:
         in_market = 0
         out_market = 1
+
+    uniswap_reserve_calc_price = uniswap.price(Decimal(uniswap_reserves[in_market]),Decimal(uniswap_reserves[out_market]), Decimal(1))
+    print(f"uniswap reserve calc price {uniswap_reserve_calc_price} w/ fee {uniswap_reserve_calc_price * (1+uniswap_fee)} (fee {uniswap_fee})")
+    uniswap_calc_price = uniswap.price(Decimal(uniswap_reserves[in_market]),Decimal(uniswap_reserves[out_market]), starting_wei)
+    print(f"uniswap calc buy {starting_wei} price {uniswap_calc_price }")
+
     # // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
     # function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
     uniswap_amount_out_wei: Decimal = uniswap_router2.functions.getAmountOut(
