@@ -41,17 +41,21 @@ def do_curve(amount_to_send_wei: Decimal, buy: bool):
     print(
         f"curve reserves t0: {w3.from_wei(curve_t0_reserve, 'ether')} t1: {w3.from_wei(curve_t1_reserve, 'ether')} reserve price t0/t1: {curve_reserve_price} w/ {curve_fee} fee price: {curve_reserve_price * (1+curve_fee)}"
     )
-    curve_reserve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, Decimal(1), curve_fee)
-    print(f"curve reserve calc price {curve_reserve_calc_price} w/ fee {curve_reserve_calc_price * (1+curve_fee)} (fee {curve_fee})")
-    curve_calc_price = curve.price(curve_A, curve_t0_reserve, curve_t1_reserve, amount_to_send_wei, curve_fee)
-    print(f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)} after buying {amount_to_send_wei}")
 
     if buy:
         in_market = 0
+        in_market_reserve = curve_t0_reserve
         out_market = 1
+        out_market_reserve = curve_t1_reserve
     else:
         in_market = 1
+        in_market_reserve = curve_t1_reserve
         out_market = 0
+        out_market_reserve = curve_t0_reserve
+    curve_reserve_calc_price = curve.price(curve_A, in_market_reserve, out_market_reserve, Decimal(1), curve_fee)
+    print(f"curve reserve calc price {curve_reserve_calc_price} w/ fee {curve_reserve_calc_price * (1+curve_fee)} (fee {curve_fee})")
+    curve_calc_price = curve.price(curve_A, in_market_reserve, out_market_reserve, amount_to_send_wei, curve_fee)
+    print(f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)} after buying {amount_to_send_wei}")
     # def get_dy_underlying(i: int128, j: int128, dx: uint256) -> uint256:
     # How much of underlying token j you'll get in exchange for dx of token i, including the fee.
     curve_amount_wei = curve_pool.functions.get_dy(in_market, out_market, amount_to_send_wei).call(
