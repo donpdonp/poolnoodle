@@ -181,10 +181,10 @@ print(
 
 cleft = do_curve(amount_to_send_wei, True)
 cu_ending_wei = do_uniswap(cleft, False)
-print(f"-> curve->uniswap {w3.from_wei(cu_ending_wei, 'ether')}")
+print(f"-> curve->uniswap {(cu_ending_wei - amount_to_send_wei)/10**18}")
 uleft = do_uniswap(amount_to_send_wei, True)
 uc_ending_wei = do_curve(uleft, False)
-print(f"-> uniswap->curve {w3.from_wei(uc_ending_wei, 'ether')}")
+print(f"-> uniswap->curve {(uc_ending_wei - amount_to_send_wei)/10**18}")
 ending_wei = cu_ending_wei
 if uc_ending_wei > cu_ending_wei:
     ending_wei = uc_ending_wei
