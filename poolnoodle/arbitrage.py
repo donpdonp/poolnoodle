@@ -59,13 +59,13 @@ def do_curve(amount_to_send_wei: Decimal, buy: bool):
         out_market = 0
         out_market_reserve = curve_t0_reserve
     curve_reserve_calc_price = curve.price(
-        curve_A, in_market_reserve, out_market_reserve, Decimal(1), curve_fee
+        in_market_reserve, out_market_reserve, Decimal(1), curve_fee, curve_A
     )
     print(
         f"curve reserve calc price {curve_reserve_calc_price} w/ fee {curve_reserve_calc_price * (1+curve_fee)} (fee {curve_fee})"
     )
     curve_calc_price = curve.price(
-        curve_A, in_market_reserve, out_market_reserve, amount_to_send_wei, curve_fee
+        in_market_reserve, out_market_reserve, amount_to_send_wei, curve_fee, curve_A
     )
     print(
         f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)} after buying {amount_to_send_wei}"
