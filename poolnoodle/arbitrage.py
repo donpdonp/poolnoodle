@@ -9,12 +9,13 @@ from web3 import Web3, HTTPProvider
 from pathlib import Path
 from eth_account import Account
 from decimal import *
-from poolnoodle import uniswap,curve
+from poolnoodle import uniswap, curve
 from poolnoodle.coin import Coin
 from poolnoodle.pool import Pool
 from poolnoodle.util import *
 
 CONFIG = yaml.safe_load(Path("config.yaml").read_text())
+
 
 def logger_init():
     logger = logging.getLogger()
@@ -30,13 +31,18 @@ def do_curve(amount_to_send_wei: Decimal, buy: bool):
 
     curve_t0 = curve_pool.functions.coins(0).call(block_identifier=LAST_BLOCK)  # eth
     curve_t1 = curve_pool.functions.coins(1).call(block_identifier=LAST_BLOCK)  # steth
-    curve_fee = Decimal(curve_pool.functions.fee().call(block_identifier=LAST_BLOCK)) / Decimal(1e10)
-    
+    curve_fee = Decimal(
+        curve_pool.functions.fee().call(block_identifier=LAST_BLOCK)
+    ) / Decimal(1e10)
 
     curve_A = curve_pool.functions.A().call(block_identifier=LAST_BLOCK)
     print(f"curve t0:{curve_t0} t1:{curve_t1} fee:{curve_fee} A:{curve_A}")
-    curve_t0_reserve: Decimal = Decimal(curve_pool.functions.balances(0).call(block_identifier=LAST_BLOCK))
-    curve_t1_reserve: Decimal = Decimal(curve_pool.functions.balances(1).call(block_identifier=LAST_BLOCK))
+    curve_t0_reserve: Decimal = Decimal(
+        curve_pool.functions.balances(0).call(block_identifier=LAST_BLOCK)
+    )
+    curve_t1_reserve: Decimal = Decimal(
+        curve_pool.functions.balances(1).call(block_identifier=LAST_BLOCK)
+    )
     curve_reserve_price = curve_t0_reserve / curve_t1_reserve
     print(
         f"curve reserves t0: {w3.from_wei(curve_t0_reserve, 'ether')} t1: {w3.from_wei(curve_t1_reserve, 'ether')} reserve price t0/t1: {curve_reserve_price} w/ {curve_fee} fee price: {curve_reserve_price * (1+curve_fee)}"
@@ -52,15 +58,23 @@ def do_curve(amount_to_send_wei: Decimal, buy: bool):
         in_market_reserve = curve_t1_reserve
         out_market = 0
         out_market_reserve = curve_t0_reserve
-    curve_reserve_calc_price = curve.price(curve_A, in_market_reserve, out_market_reserve, Decimal(1), curve_fee)
-    print(f"curve reserve calc price {curve_reserve_calc_price} w/ fee {curve_reserve_calc_price * (1+curve_fee)} (fee {curve_fee})")
-    curve_calc_price = curve.price(curve_A, in_market_reserve, out_market_reserve, amount_to_send_wei, curve_fee)
-    print(f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)} after buying {amount_to_send_wei}")
+    curve_reserve_calc_price = curve.price(
+        curve_A, in_market_reserve, out_market_reserve, Decimal(1), curve_fee
+    )
+    print(
+        f"curve reserve calc price {curve_reserve_calc_price} w/ fee {curve_reserve_calc_price * (1+curve_fee)} (fee {curve_fee})"
+    )
+    curve_calc_price = curve.price(
+        curve_A, in_market_reserve, out_market_reserve, amount_to_send_wei, curve_fee
+    )
+    print(
+        f"curve calc price {curve_calc_price } w/ fee {curve_calc_price*(1+curve_fee)} after buying {amount_to_send_wei}"
+    )
     # def get_dy_underlying(i: int128, j: int128, dx: uint256) -> uint256:
     # How much of underlying token j you'll get in exchange for dx of token i, including the fee.
-    curve_amount_wei = curve_pool.functions.get_dy(in_market, out_market, amount_to_send_wei).call(
-        block_identifier=LAST_BLOCK
-    )
+    curve_amount_wei = curve_pool.functions.get_dy(
+        in_market, out_market, amount_to_send_wei
+    ).call(block_identifier=LAST_BLOCK)
     curve_price_wei = Decimal(amount_to_send_wei) / Decimal(curve_amount_wei)
     curve_price_nofee = curve_price_wei / Decimal(1 - curve_fee)
     print(
@@ -129,9 +143,19 @@ def do_uniswap(starting_wei: Decimal, buy: bool):
         in_market = 0
         out_market = 1
 
-    uniswap_reserve_calc_price = uniswap.price(Decimal(uniswap_reserves[in_market]),Decimal(uniswap_reserves[out_market]), Decimal(1))
-    print(f"uniswap reserve calc price {uniswap_reserve_calc_price} w/ fee {uniswap_reserve_calc_price * (1+uniswap_fee)} (fee {uniswap_fee})")
-    uniswap_calc_price = uniswap.price(Decimal(uniswap_reserves[in_market]),Decimal(uniswap_reserves[out_market]), starting_wei)
+    uniswap_reserve_calc_price = uniswap.price(
+        Decimal(uniswap_reserves[in_market]),
+        Decimal(uniswap_reserves[out_market]),
+        Decimal(1),
+    )
+    print(
+        f"uniswap reserve calc price {uniswap_reserve_calc_price} w/ fee {uniswap_reserve_calc_price * (1+uniswap_fee)} (fee {uniswap_fee})"
+    )
+    uniswap_calc_price = uniswap.price(
+        Decimal(uniswap_reserves[in_market]),
+        Decimal(uniswap_reserves[out_market]),
+        starting_wei,
+    )
     print(f"uniswap calc buy {starting_wei} price {uniswap_calc_price }")
 
     # // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
@@ -155,6 +179,7 @@ def do_uniswap(starting_wei: Decimal, buy: bool):
     #     f"uniswap loop eth->steth->eth {uniswap_amount_out2_wei - starting_wei} profit. {uniswap_price_change} price change"
     # )
     return uniswap_amount_out_wei
+
 
 logger = logger_init()
 steth_coin = Coin("ethereum", "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84")

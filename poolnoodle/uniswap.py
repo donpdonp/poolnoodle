@@ -10,11 +10,13 @@ from decimal import Decimal
 #     amountOut = numerator / denominator;
 # }
 
+
 def getAmountOut(amountIn: Decimal, reserveIn: Decimal, reserveOut: Decimal):
     amountInWithFee = amountIn * 997
     numerator = amountInWithFee * reserveOut
     denominator = (reserveIn * 1000) + amountInWithFee
     return numerator / denominator
+
 
 def price(x: Decimal, y: Decimal, x_add: Decimal):
     return x_add / getAmountOut(x_add, x, y)
